@@ -16,14 +16,15 @@ public class Contrast : Filter {
     }
     
     public func apply(image: RGBAImage) -> RGBAImage {
-        var pixel : Pixel?
         for r in 0...image.height - 1 {
             for c in 0...image.width - 1 {
-                pixel = image.pixels[ image.height * r + c ]
-                pixel!.red = calculateContrast(pixel!.red)
-                pixel!.green = calculateContrast(pixel!.green)
-                pixel!.blue = calculateContrast(pixel!.blue)
-                image.pixels[image.height * r + c] = pixel!;
+                let index = r * image.width + c
+                var pixel = image.pixels[index]
+                pixel = image.pixels[index]
+                pixel.red = calculateContrast(pixel.red)
+                pixel.green = calculateContrast(pixel.green)
+                pixel.blue = calculateContrast(pixel.blue)
+                image.pixels[index] = pixel;
             }
         }
         return image

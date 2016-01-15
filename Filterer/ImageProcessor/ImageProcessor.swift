@@ -8,7 +8,6 @@ public enum Colors {
 }
 
 public class ImageProcessor {
-    private var image : RGBAImage?
     private static var  DefaultFilters : [String : Filter] = [
         "increase 50% of brightness": Brightness(increaseFactor: 0.5),
         "increase contrast by 2": Contrast(factor: 2),
@@ -18,32 +17,23 @@ public class ImageProcessor {
         "invert": Invert()
     ]
     
-    public init (image : RGBAImage) {
-        self.image = image;
-    }
-
-    func applyFilter(filter: Filter){
-        self.image = filter.apply(self.image!)
+    public static func applyFilter(filter: Filter, image: RGBAImage) -> RGBAImage {
+        return filter.apply(image)
     }
     
-    public func applyFilter(filter filter: Filter) -> RGBAImage {
-        applyFilter(filter)
-        return self.image!
-    }
-    
-    public func applyFilters(filters filters: Array<Filter>) -> RGBAImage {
+    public static func applyFilters(filters filters: Array<Filter>, var image : RGBAImage) -> RGBAImage {
         for index in 0...filters.count - 1 {
-            self.applyFilter(filters[index])
+            image = ImageProcessor.applyFilter(filters[index], image: image)
         }
-        return self.image!
+        return image
     }
  
-    public func applyDefaultFilter(name n : String) -> RGBAImage {
+    public static func applyDefaultFilter(name n : String, var image: RGBAImage) -> RGBAImage {
         let filter : Filter? = ImageProcessor.DefaultFilters[ n.lowercaseString.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceCharacterSet()) ]
         if (filter != nil) {
             print("Applying default filter: \(n)")
-            self.applyFilter(filter!);
+            image = ImageProcessor.applyFilter(filter!, image: image);
         }
-        return self.image!
-    }   
+        return image
+    }
 }

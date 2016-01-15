@@ -8,21 +8,27 @@
 
 import UIKit
 
-class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-
-    var filteredImage: UIImage?
-    
+class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate, UICollectionViewDataSource, UICollectionViewDelegate {
     @IBOutlet var imageView: UIImageView!
-    
+    @IBOutlet weak var filteredImageView: UIImageView!
     @IBOutlet var secondaryMenu: UIView!
     @IBOutlet var bottomMenu: UIView!
-    
+    @IBOutlet weak var filtersCollectionView: UICollectionView!
     @IBOutlet var filterButton: UIButton!
+    
+    let reuseIdentifier = "ImageFilterCell"
+    var imageFilters : Array<String> = Array<String>()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         secondaryMenu.backgroundColor = UIColor.whiteColor().colorWithAlphaComponent(0.5)
         secondaryMenu.translatesAutoresizingMaskIntoConstraints = false
+        imageFilters.append("iincrease 50% of brightness")
+        imageFilters.append("increase contrast by 2")
+        imageFilters.append("gamma 1.5")
+        imageFilters.append("middle threshold")
+        imageFilters.append("duplicate intensity of red")
+        imageFilters.append("invert")
     }
 
     // MARK: Share
@@ -88,13 +94,14 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
     }
     
     func showSecondaryMenu() {
+        self.filtersCollectionView.reloadData()
         view.addSubview(secondaryMenu)
         
         let bottomConstraint = secondaryMenu.bottomAnchor.constraintEqualToAnchor(bottomMenu.topAnchor)
         let leftConstraint = secondaryMenu.leftAnchor.constraintEqualToAnchor(view.leftAnchor)
         let rightConstraint = secondaryMenu.rightAnchor.constraintEqualToAnchor(view.rightAnchor)
         
-        let heightConstraint = secondaryMenu.heightAnchor.constraintEqualToConstant(44)
+        let heightConstraint = secondaryMenu.heightAnchor.constraintEqualToConstant(128)
         
         NSLayoutConstraint.activateConstraints([bottomConstraint, leftConstraint, rightConstraint, heightConstraint])
         
@@ -116,5 +123,24 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
         }
     }
 
+    func numberOfSectionsInCollectionView(collectionView: UICollectionView) -> Int {
+        return 1
+    }
+    
+    func collectionView(collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return self.imageFilters.count
+    }
+    
+    func collectionView(collectionView: UICollectionView, cellForItemAtIndexPath indexPath: NSIndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCellWithReuseIdentifier(reuseIdentifier, forIndexPath: indexPath)
+        if (imageView.image != nil) {
+            let rgba = RGBAImage(image: imageView.image!)
+            let filteredImage = ImageProcessor.applyDefaultFilter(name: imageFilters[indexPath.row], image: rgba!)
+            cell.backgroundView = UIImageView(image: filteredImage.toUIImage())
+        }
+        
+        return cell
+    }
 }
+
 

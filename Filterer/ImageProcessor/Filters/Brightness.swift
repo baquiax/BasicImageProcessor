@@ -10,15 +10,15 @@ public class Brightness : Filter {
     }
     
     public func apply(image: RGBAImage) -> RGBAImage {
-        var pixel : Pixel?
         let percentage : Double = 1.0 + self.percentage;
         for r in 0...image.height - 1 {
             for c in 0...image.width - 1 {
-                pixel = image.pixels[ image.height * r + c ]
-                pixel!.red = limitAndCastNumber((Double(pixel!.red) * percentage))
-                pixel!.green = limitAndCastNumber((Double(pixel!.green) * percentage))
-                pixel!.blue = limitAndCastNumber((Double(pixel!.blue) * percentage))                
-                image.pixels[image.height * r + c] = pixel!;
+                let index = r * image.width + c
+                var pixel = image.pixels[index]
+                pixel.red = limitAndCastNumber((Double(pixel.red) * percentage))
+                pixel.green = limitAndCastNumber((Double(pixel.green) * percentage))
+                pixel.blue = limitAndCastNumber((Double(pixel.blue) * percentage))
+                image.pixels[index] = pixel;
             }
         }
         return image
