@@ -26,4 +26,12 @@ public class Threshold : Filter {
         }
         return image
     }
+    
+    public func changeIntensity(newValue: Double) {
+        self.minimumLevel = Int(newValue)
+    }
+
+    public func getIntensity() -> Double {
+        return Double(self.minimumLevel)
+    }
 }

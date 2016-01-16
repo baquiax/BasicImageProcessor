@@ -12,26 +12,36 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
     @IBOutlet var imageView: UIImageView!
     @IBOutlet weak var filteredImageView: UIImageView!
     @IBOutlet var secondaryMenu: UIView!
+    @IBOutlet var sliderView: UIView!
     @IBOutlet var bottomMenu: UIView!
     @IBOutlet weak var filtersCollectionView: UICollectionView!
     @IBOutlet var filterButton: UIButton!
     @IBOutlet weak var compareButton: UIButton!
     @IBOutlet weak var originalLabel: UILabel!
+    @IBOutlet weak var editButton: UIButton!
+    @IBOutlet weak var slider: UISlider!
+    @IBOutlet weak var initLabelSlider: UILabel!
+    @IBOutlet weak var endLabelSlider: UILabel!
+    @IBOutlet weak var sliderValue: UILabel!
     
+    var currentFilterIndex : Int = 0
     let reuseIdentifier = "ImageFilterCell"
-    var availableFilters : Array<String> = Array<String>()
+    var availableFilters : Array<Filter> = Array<Filter>()
     var imagesFiltered : Array<UIImage> = Array<UIImage>()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         secondaryMenu.backgroundColor = UIColor.whiteColor().colorWithAlphaComponent(0.5)
         secondaryMenu.translatesAutoresizingMaskIntoConstraints = false
-        availableFilters.append("increase 50% of brightness")
-        availableFilters.append("increase contrast by 2")
-        availableFilters.append("gamma 1.5")
-        availableFilters.append("middle threshold")
-        availableFilters.append("duplicate intensity of red")
-        availableFilters.append("invert")
+        sliderView.backgroundColor = UIColor.whiteColor().colorWithAlphaComponent(0.5)
+        sliderView.translatesAutoresizingMaskIntoConstraints = false
+        
+        availableFilters.append(Brightness(increaseFactor: 0.5))
+        availableFilters.append(Contrast(factor: 2))
+        availableFilters.append(Gamma(gamma: 1.5))
+        availableFilters.append(Threshold (minimumLevel: 127))
+        availableFilters.append(IncreaseIntensity(increaseFactor: 1, color: Colors.Red))
+        availableFilters.append(Invert())
         resetImagesFiltered()
     }
 
@@ -90,6 +100,7 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
     
     // MARK: Filter Menu
     @IBAction func onFilter(sender: UIButton) {
+        hideSliderMenu()
         if (sender.selected) {
             hideSecondaryMenu()
             sender.selected = false
@@ -136,6 +147,70 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
         }
     }
     
+    func showSliderMenu() {
+        view.addSubview(sliderView)
+        
+        let bottomConstraint = sliderView.bottomAnchor.constraintEqualToAnchor(bottomMenu.topAnchor)
+        let leftConstraint = sliderView.leftAnchor.constraintEqualToAnchor(view.leftAnchor)
+        let rightConstraint = sliderView.rightAnchor.constraintEqualToAnchor(view.rightAnchor)
+        
+        let heightConstraint = sliderView.heightAnchor.constraintEqualToConstant(128)
+        
+        NSLayoutConstraint.activateConstraints([bottomConstraint, leftConstraint, rightConstraint, heightConstraint])
+        
+        view.layoutIfNeeded()
+        
+        self.sliderView.alpha = 0
+        UIView.animateWithDuration(0.4) {
+            self.sliderView.alpha = 1.0
+        }
+    }
+    
+    func hideSliderMenu() {
+        UIView.animateWithDuration(0.4, animations: {
+            self.sliderView.alpha = 0
+            }) { completed in
+                if completed == true {
+                    self.sliderView.removeFromSuperview()
+                    self.editButton.selected = false
+                }
+        }
+    }
+    
+    @IBAction func onPressEdit(sender: UIButton) {
+        hideSecondaryMenu()
+        if (sender.selected) {
+            hideSliderMenu()
+            sender.selected = false
+        } else {
+            showSliderMenu()
+            sender.selected = true
+        }
+        
+        
+        
+        let currentFilter : Filter = self.availableFilters[currentFilterIndex];
+        
+        if (currentFilter is Contrast || currentFilter is Gamma) {
+            slider.minimumValue = -5
+            slider.maximumValue = 5
+        } else if (currentFilter is Threshold) {
+            slider.minimumValue = -127
+            slider.maximumValue = 127
+        } else if (currentFilter is Invert) {
+            slider.maximumValue = 0
+            slider.minimumValue = 0
+        } else {
+            slider.minimumValue = -1
+            slider.maximumValue = 1
+        }
+        
+        slider.value = Float(currentFilter.getIntensity())
+        sliderValue.text = String(format:"%.2f", currentFilter.getIntensity())
+        initLabelSlider.text = String(slider.minimumValue);
+        endLabelSlider.text = String(slider.maximumValue);
+        sliderView.layoutIfNeeded()
+    }
     
     func showSecondaryMenu() {
         self.filtersCollectionView.reloadData()
@@ -163,6 +238,7 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
             }) { completed in
                 if completed == true {
                     self.secondaryMenu.removeFromSuperview()
+                    self.filterButton.selected = false
                 }
         }
     }
@@ -182,11 +258,13 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
     }
     
     func collectionView(collectionView: UICollectionView, didSelectItemAtIndexPath indexPath: NSIndexPath) {
+        self.currentFilterIndex = indexPath.row
         filteredImageView.image = self.imagesFiltered[indexPath.row];
         filteredImageView.hidden = false;
         filteredImageView.alpha = 1;
         self.compareButton.selected = false
         self.compareButton.hidden = false
+        self.editButton.hidden = false
     }
 
     func resetImagesFiltered () {
@@ -196,9 +274,27 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
             if (rgba == nil) {
                 continue
             }
-            let newImage = ImageProcessor.applyDefaultFilter(name: self.availableFilters[counter], image: rgba!)
+            let newImage = ImageProcessor.applyFilter(self.availableFilters[counter], image: rgba!)
             self.imagesFiltered.append(newImage.toUIImage()!)
         }
+    }
+    
+    @IBAction func changingSlider(sender: UISlider) {
+        let currentFilter = self.availableFilters[self.currentFilterIndex];
+        sender.enabled = false
+        currentFilter.changeIntensity(Double(sender.value));
+
+        let rgba = RGBAImage(image: imageView.image!)
+        if (rgba == nil) {
+            return
+        }
+        let newImage = ImageProcessor.applyFilter(currentFilter, image:rgba!)
+        self.availableFilters[currentFilterIndex] = currentFilter
+        self.imagesFiltered[currentFilterIndex] = newImage.toUIImage()!
+        self.filtersCollectionView.reloadData()
+        filteredImageView.image = newImage.toUIImage()
+        sliderValue.text = String(format:"%.2f", currentFilter.getIntensity())
+        sender.enabled = true
     }
 }
 

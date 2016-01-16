@@ -25,4 +25,12 @@ public class Gamma : Filter {
         }
         return image
     }
+    
+    public func changeIntensity(newValue: Double) {
+        self.gamma = newValue;
+    }
+
+    public func getIntensity() -> Double {
+        return self.gamma
+    }
 }

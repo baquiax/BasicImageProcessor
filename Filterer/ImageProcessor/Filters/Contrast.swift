@@ -30,4 +30,12 @@ public class Contrast : Filter {
         return image
     }
     
+    public func changeIntensity(newValue: Double) {
+        self.factor = newValue;
+    }
+
+    public func getIntensity() -> Double {
+        return self.factor
+    }
+    
 }

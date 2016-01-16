@@ -24,4 +24,11 @@ public class Brightness : Filter {
         return image
     }
     
+    public func changeIntensity(newValue: Double) {
+        self.percentage = newValue;
+    }
+    
+    public func getIntensity() -> Double {
+        return self.percentage
+    }
 }

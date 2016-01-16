@@ -22,4 +22,13 @@ public class Invert : Filter {
         }
         return image
     }
+    
+    public func changeIntensity(newValue: Double) {
+
+    }
+    
+    public func getIntensity() -> Double {
+        return -1
+    }
+
 }
