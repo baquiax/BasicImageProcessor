@@ -28,7 +28,7 @@ public class Invert : Filter {
     }
     
     public func getIntensity() -> Double {
-        return -1
+        return 0
     }
 
 }
