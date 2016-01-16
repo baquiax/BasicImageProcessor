@@ -15,20 +15,24 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
     @IBOutlet var bottomMenu: UIView!
     @IBOutlet weak var filtersCollectionView: UICollectionView!
     @IBOutlet var filterButton: UIButton!
+    @IBOutlet weak var compareButton: UIButton!
+    @IBOutlet weak var originalLabel: UILabel!
     
     let reuseIdentifier = "ImageFilterCell"
-    var imageFilters : Array<String> = Array<String>()
+    var availableFilters : Array<String> = Array<String>()
+    var imagesFiltered : Array<UIImage> = Array<UIImage>()
     
     override func viewDidLoad() {
         super.viewDidLoad()
         secondaryMenu.backgroundColor = UIColor.whiteColor().colorWithAlphaComponent(0.5)
         secondaryMenu.translatesAutoresizingMaskIntoConstraints = false
-        imageFilters.append("iincrease 50% of brightness")
-        imageFilters.append("increase contrast by 2")
-        imageFilters.append("gamma 1.5")
-        imageFilters.append("middle threshold")
-        imageFilters.append("duplicate intensity of red")
-        imageFilters.append("invert")
+        availableFilters.append("increase 50% of brightness")
+        availableFilters.append("increase contrast by 2")
+        availableFilters.append("gamma 1.5")
+        availableFilters.append("middle threshold")
+        availableFilters.append("duplicate intensity of red")
+        availableFilters.append("invert")
+        resetImagesFiltered()
     }
 
     // MARK: Share
@@ -74,7 +78,8 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
     func imagePickerController(picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : AnyObject]) {
         dismissViewControllerAnimated(true, completion: nil)
         if let image = info[UIImagePickerControllerOriginalImage] as? UIImage {
-            imageView.image = image
+            self.imageView.image = image
+            self.hideFilteredImageView()
         }
     }
     
@@ -92,6 +97,44 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
             sender.selected = true
         }
     }
+    
+    func hideFilteredImageView() {
+        UIView.animateWithDuration(0.4, animations: {
+            self.filteredImageView.alpha = 0
+            }) { completed in
+                if completed == true {
+                    self.originalLabel.hidden = false;
+                    self.filteredImageView.hidden = true
+                }
+        }
+    }
+    
+    func showFilteredImageView() {
+        self.filteredImageView.alpha = 0
+        self.filteredImageView.hidden = false
+        UIView.animateWithDuration(0.4) {
+            self.originalLabel.hidden = true;
+            self.filteredImageView.alpha = 1.0
+        }
+    }
+    
+    @IBAction func compare(sender: UIButton) {
+        if (sender.selected) {
+            showFilteredImageView()
+            sender.selected = false
+        } else {
+            hideFilteredImageView()
+            sender.selected = true
+        }
+    }
+    @IBAction func onPresImage(sender: UILongPressGestureRecognizer) {
+        if (sender.state == UIGestureRecognizerState.Began) {
+            hideFilteredImageView()
+        } else if (sender.state == UIGestureRecognizerState.Ended) {
+            showFilteredImageView()
+        }
+    }
+    
     
     func showSecondaryMenu() {
         self.filtersCollectionView.reloadData()
@@ -128,18 +171,33 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
     }
     
     func collectionView(collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return self.imageFilters.count
+        return self.availableFilters.count
     }
     
     func collectionView(collectionView: UICollectionView, cellForItemAtIndexPath indexPath: NSIndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCellWithReuseIdentifier(reuseIdentifier, forIndexPath: indexPath)
-        if (imageView.image != nil) {
-            let rgba = RGBAImage(image: imageView.image!)
-            let filteredImage = ImageProcessor.applyDefaultFilter(name: imageFilters[indexPath.row], image: rgba!)
-            cell.backgroundView = UIImageView(image: filteredImage.toUIImage())
-        }
-        
+        cell.backgroundView = UIImageView(image: self.imagesFiltered[indexPath.row])
         return cell
+    }
+    
+    func collectionView(collectionView: UICollectionView, didSelectItemAtIndexPath indexPath: NSIndexPath) {
+        filteredImageView.image = self.imagesFiltered[indexPath.row];
+        filteredImageView.hidden = false;
+        filteredImageView.alpha = 1;
+        self.compareButton.selected = false
+        self.compareButton.hidden = false
+    }
+
+    func resetImagesFiltered () {
+        self.imagesFiltered.removeAll()
+        for counter in 0...self.availableFilters.count - 1 {
+            let rgba = RGBAImage(image: imageView.image!)
+            if (rgba == nil) {
+                continue
+            }
+            let newImage = ImageProcessor.applyDefaultFilter(name: self.availableFilters[counter], image: rgba!)
+            self.imagesFiltered.append(newImage.toUIImage()!)
+        }
     }
 }
 
